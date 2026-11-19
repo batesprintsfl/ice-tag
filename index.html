@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emergency Medical ID • Bates Printing</title>
+  <style>
+    :root {
+      --red: #d92323;
+      --red-dark: #a81818;
+      --bg: #111315;
+      --card: #1b1f23;
+      --border: #2e343b;
+      --text: #f4f6f8;
+      --muted: #9aa4b2;
+      --green: #1ea653;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .container { width: 100%; max-width: 480px; }
+    .header {
+      background: var(--red);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 6px 20px rgba(217, 35, 35, 0.35);
+      margin-bottom: 16px;
+    }
+    .cross {
+      width: 44px;
+      height: 44px;
+      background: #fff;
+      color: var(--red);
+      border-radius: 10px;
+      font-size: 32px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .header h1 { margin: 0; font-size: 19px; letter-spacing: 0.4px; }
+    .header p { margin: 3px 0 0; font-size: 13px; opacity: 0.92; }
+    .tag-badge {
+      display: inline-block;
+      background: rgba(0,0,0,0.28);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 5px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 12px 0 5px;
+      color: #dce2e8;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: #121518;
+      color: var(--text);
+      font-size: 15px;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--red); }
+    textarea { resize: vertical; min-height: 64px; }
+    .row { display: flex; gap: 10px; }
+    .row > div { flex: 1; }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 14px;
+      display: inline-block;
+      text-align: center;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--red); color: #fff; }
+    .btn-primary:hover { background: var(--red-dark); }
+    .btn-call { background: var(--green); color: #fff; margin-top: 8px; }
+    .btn-secondary { background: #2a3038; color: #fff; font-size: 14px; padding: 11px; }
+    .info-row { padding: 9px 0; border-bottom: 1px solid #262b31; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { font-size: 12px; color: var(--muted); text-transform: uppercase; }
+    .info-val { font-size: 16px; font-weight: 600; margin-top: 2px; white-space: pre-line; }
+    .alert-val { color: #ff6b6b; }
+    .pin-box {
+      background: #121518;
+      border: 1px solid var(--red);
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 10px;
+    }
+    .status-msg { text-align: center; padding: 30px 10px; color: var(--muted); }
+    .footer { text-align: center; font-size: 12px; color: var(--muted); margin-top: 18px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="cross">+</div>
+      <div>
+        <h1 id="headerTitle">IN CASE OF EMERGENCY</h1>
+        <p id="headerSub">Rider Medical & Emergency Contact ID</p>
+        <div class="tag-badge" id="tagIdBadge">Loading Tag...</div>
+      </div>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="loadingView" class="card status-msg">Loading emergency tag...</div>
+
+    <!-- INVALID / MISSING TAG ID -->
+    <div id="noIdView" class="card hidden">
+      <h2>No Tag ID Detected</h2>
+      <p style="font-size:14px; color:#cfd6de; line-height:1.5;">
+        Tap your <strong>TAP Emergency Badge</strong> directly with your phone to open or register your tag.
+      </p>
+    </div>
+
+    <!-- VIEW 1: EMERGENCY RESPONDER DISPLAY -->
+    <div id="viewMode" class="hidden">
+      <div class="card">
+        <h2>Rider Identification</h2>
+        <div class="info-row">
+          <div class="info-label">Full Name</div>
+          <div class="info-val" id="vName">—</div>
+        </div>
+        <div class="row">
+          <div class="info-row" style="flex:1">
+            <div class="info-label">Date of Birth</div>
+            <div class="info-val" id="vDob">—</div>
+          </div>
+          <div class="info-row" style="flex:1">
+            <div class="info-label">Blood Type</div>
+            <div class="info-val alert-val" id="vBlood">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Critical Medical Info</h2>
+        <div class="info-row">
+          <div class="info-label">Allergies</div>
+          <div class="info-val alert-val" id="vAllergies">None Listed</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Medical Conditions</div>
+          <div class="info-val" id="vConditions">None Listed</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Current Medications</div>
+          <div class="info-val" id="vMeds">None Listed</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Emergency Contacts (Tap to Call)</h2>
+        <div id="vContacts"></div>
+      </div>
+
+      <div class="card" id="vNotesCard">
+        <h2>Bike / Insurance / Extra Notes</h2>
+        <div class="info-val" id="vNotes" style="font-size:14px; font-weight:400;"></div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="promptUnlock()">Rider Edit (Requires 4-Digit PIN)</button>
+    </div>
+
+    <!-- VIEW 2: CLAIM / EDIT FORM -->
+    <div id="editMode" class="hidden">
+      <div class="card">
+        <h2>1. Rider Details</h2>
+        <label>Full Name *</label>
+        <input type="text" id="fName" placeholder="e.g., Alex Rivera" />
+
+        <div class="row">
+          <div>
+            <label>Date of Birth</label>
+            <input type="date" id="fDob" />
+          </div>
+          <div>
+            <label>Blood Type</label>
+            <select id="fBlood">
+              <option value="Unknown">Unknown</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2. Medical Information</h2>
+        <label>Allergies (Drugs, Food, Stings)</label>
+        <input type="text" id="fAllergies" placeholder="e.g., Penicillin, Bee stings, None" />
+
+        <label>Medical Conditions</label>
+        <input type="text" id="fConditions" placeholder="e.g., Type 1 Diabetes, Asthma, None" />
+
+        <label>Current Medications</label>
+        <input type="text" id="fMeds" placeholder="e.g., EpiPen in jacket pocket, None" />
+      </div>
+
+      <div class="card">
+        <h2>3. Emergency Contacts</h2>
+        <label>Contact 1 Name & Relationship *</label>
+        <input type="text" id="fC1Name" placeholder="e.g., Jordan Rivera (Spouse)" />
+        <label>Contact 1 Phone *</label>
+        <input type="tel" id="fC1Phone" placeholder="e.g., +1 555-234-5678" />
+
+        <label>Contact 2 Name & Relationship (Optional)</label>
+        <input type="text" id="fC2Name" placeholder="e.g., Sam Rivera (Parent)" />
+        <label>Contact 2 Phone (Optional)</label>
+        <input type="tel" id="fC2Phone" placeholder="e.g., +1 555-876-5432" />
+      </div>
+
+      <div class="card">
+        <h2>4. Insurance / Bike / Notes (Optional)</h2>
+        <textarea id="fNotes" placeholder="e.g., Organ Donor • Geico Policy #123456 • Bike: 2024 Low Rider S"></textarea>
+
+        <div class="pin-box">
+          <label style="margin-top:0; color:#fff;">Set Your 4-Digit Security PIN *</label>
+          <p style="font-size:12px; color:var(--muted); margin:0 0 8px;">
+            Protects your emergency profile so only you can edit it later.
+          </p>
+          <input type="password" id="fPin" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="Enter 4 numbers (e.g., 2486)" />
+        </div>
+
+        <button class="btn btn-primary" id="saveBtn" onclick="saveProfile()">Save & Activate My Badge</button>
+      </div>
+    </div>
+
+    <div class="footer">
+      Bates Printing • @batesprinting_fl
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // =====================================================================
+    // PASTE YOUR FIREBASE CONFIG VALUES BELOW
+    // =====================================================================
+   const firebaseConfig = {
+  apiKey: "AIzaSyBbJDNsx_f1M0DlG6B1oQuhGHd71PD4rNk",
+  authDomain: "bates-ice-tag.firebaseapp.com",
+  projectId: "bates-ice-tag",
+  storageBucket: "bates-ice-tag.firebasestorage.app",
+  messagingSenderId: "341139359619",
+  appId: "1:341139359619:web:f60e34b727db27205b18b6"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const tagId = (params.get("id") || "").trim().toUpperCase();
+    let existingRecord = null;
+    let verifiedPin = null;
+
+    document.getElementById("tagIdBadge").textContent = tagId ? `BADGE ID: ${tagId}` : "NO BADGE ID";
+
+    function escapeHtml(str) {
+      return String(str || "").replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function showViewMode(data) {
+      document.getElementById("loadingView").classList.add("hidden");
+      document.getElementById("editMode").classList.add("hidden");
+      document.getElementById("viewMode").classList.remove("hidden");
+      document.getElementById("headerTitle").textContent = "EMERGENCY MEDICAL ID";
+      document.getElementById("headerSub").textContent = "First Responder Information";
+
+      document.getElementById("vName").textContent = data.name || "Not Provided";
+      document.getElementById("vDob").textContent = data.dob || "Not Provided";
+      document.getElementById("vBlood").textContent = data.blood || "Unknown";
+      document.getElementById("vAllergies").textContent = data.allergies || "None Listed";
+      document.getElementById("vConditions").textContent = data.conditions || "None Listed";
+      document.getElementById("vMeds").textContent = data.meds || "None Listed";
+
+      const contactsDiv = document.getElementById("vContacts");
+      contactsDiv.innerHTML = "";
+      if (data.c1Name && data.c1Phone) {
+        contactsDiv.innerHTML += `
+          <div class="info-row">
+            <div class="info-label">${escapeHtml(data.c1Name)}</div>
+            <a class="btn btn-call" href="tel:${escapeHtml(data.c1Phone)}">Call ${escapeHtml(data.c1Phone)}</a>
+          </div>`;
+      }
+      if (data.c2Name && data.c2Phone) {
+        contactsDiv.innerHTML += `
+          <div class="info-row">
+            <div class="info-label">${escapeHtml(data.c2Name)}</div>
+            <a class="btn btn-call" href="tel:${escapeHtml(data.c2Phone)}">Call ${escapeHtml(data.c2Phone)}</a>
+          </div>`;
+      }
+
+      if (data.notes && data.notes.trim() !== "") {
+        document.getElementById("vNotesCard").classList.remove("hidden");
+        document.getElementById("vNotes").textContent = data.notes;
+      } else {
+        document.getElementById("vNotesCard").classList.add("hidden");
+      }
+    }
+
+    function showEditMode(data) {
+      document.getElementById("loadingView").classList.add("hidden");
+      document.getElementById("viewMode").classList.add("hidden");
+      document.getElementById("editMode").classList.remove("hidden");
+      document.getElementById("headerTitle").textContent = data ? "EDIT YOUR ICE BADGE" : "ACTIVATE YOUR ICE BADGE";
+      document.getElementById("headerSub").textContent = "Fill out below — no app needed";
+
+      if (data) {
+        document.getElementById("fName").value = data.name || "";
+        document.getElementById("fDob").value = data.dob || "";
+        document.getElementById("fBlood").value = data.blood || "Unknown";
+        document.getElementById("fAllergies").value = data.allergies || "";
+        document.getElementById("fConditions").value = data.conditions || "";
+        document.getElementById("fMeds").value = data.meds || "";
+        document.getElementById("fC1Name").value = data.c1Name || "";
+        document.getElementById("fC1Phone").value = data.c1Phone || "";
+        document.getElementById("fC2Name").value = data.c2Name || "";
+        document.getElementById("fC2Phone").value = data.c2Phone || "";
+        document.getElementById("fNotes").value = data.notes || "";
+        document.getElementById("fPin").value = verifiedPin || "";
+      }
+    }
+
+    window.promptUnlock = function() {
+      const entered = prompt("Enter your 4-digit PIN to edit this badge:");
+      if (!entered) return;
+      if (existingRecord && entered.trim() === existingRecord.pin) {
+        verifiedPin = entered.trim();
+        showEditMode(existingRecord);
+      } else {
+        alert("Incorrect PIN.");
+      }
+    };
+
+    window.saveProfile = async function() {
+      const name = document.getElementById("fName").value.trim();
+      const c1Name = document.getElementById("fC1Name").value.trim();
+      const c1Phone = document.getElementById("fC1Phone").value.trim();
+      const pin = document.getElementById("fPin").value.trim();
+
+      if (!name || !c1Name || !c1Phone) {
+        alert("Please enter your Full Name and Emergency Contact 1 Name & Phone.");
+        return;
+      }
+      if (!/^\d{4}$/.test(pin)) {
+        alert("Please enter a 4-digit numeric PIN (e.g., 1234).");
+        return;
+      }
+
+      const btn = document.getElementById("saveBtn");
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+
+      const payload = {
+        name,
+        dob: document.getElementById("fDob").value,
+        blood: document.getElementById("fBlood").value,
+        allergies: document.getElementById("fAllergies").value.trim(),
+        conditions: document.getElementById("fConditions").value.trim(),
+        meds: document.getElementById("fMeds").value.trim(),
+        c1Name,
+        c1Phone,
+        c2Name: document.getElementById("fC2Name").value.trim(),
+        c2Phone: document.getElementById("fC2Phone").value.trim(),
+        notes: document.getElementById("fNotes").value.trim(),
+        pin: existingRecord ? existingRecord.pin : pin,
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await setDoc(doc(db, "tags", tagId), payload);
+        existingRecord = payload;
+        verifiedPin = payload.pin;
+        showViewMode(payload);
+      } catch (err) {
+        alert("Could not save profile: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save & Activate My Badge";
+      }
+    };
+
+    async function init() {
+      if (!tagId) {
+        document.getElementById("loadingView").classList.add("hidden");
+        document.getElementById("noIdView").classList.remove("hidden");
+        return;
+      }
+      try {
+        const snap = await getDoc(doc(db, "tags", tagId));
+        if (snap.exists()) {
+          existingRecord = snap.data();
+          showViewMode(existingRecord);
+        } else {
+          showEditMode(null);
+        }
+      } catch (err) {
+        document.getElementById("loadingView").textContent = "Error loading badge: " + err.message;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
